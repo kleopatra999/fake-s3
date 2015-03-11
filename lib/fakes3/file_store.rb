@@ -143,6 +143,11 @@ module FakeS3
       src_bucket = self.get_bucket(src_bucket_name)
       dst_bucket = self.get_bucket(dst_bucket_name)
 
+      if !dst_bucket
+        # Lazily create a bucket, the same way store_object does
+        dst_bucket = self.create_bucket(dst_bucket_name)
+      end
+
       obj = S3Object.new
       obj.name = dst_name
       obj.md5 = src_metadata[:md5]
