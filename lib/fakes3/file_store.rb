@@ -143,6 +143,11 @@ module FakeS3
       src_bucket = self.get_bucket(src_bucket_name)
       dst_bucket = self.get_bucket(dst_bucket_name)
 
+      if !dst_bucket
+        # Lazily create a bucket, the same way store_object does
+        dst_bucket = self.create_bucket(dst_bucket_name)
+      end
+
       obj = S3Object.new
       obj.name = dst_name
       obj.md5 = src_metadata[:md5]
@@ -212,6 +217,23 @@ module FakeS3
         FileUtils.rm_rf(filename)
         object = bucket.find(object_name)
         bucket.remove(object)
+      rescue
+        puts $!
+        $!.backtrace.each { |line| puts line }
+        return nil
+      end
+    end
+
+    def delete_objects(bucket, objects, request)
+      begin
+        filenames = []
+        objects.each do |object_name|
+          filenames << File.join(@root,bucket.name,object_name)
+          object = bucket.find(object_name)
+          bucket.remove(object)
+        end
+
+        FileUtils.rm_rf(filenames)
       rescue
         puts $!
         $!.backtrace.each { |line| puts line }
